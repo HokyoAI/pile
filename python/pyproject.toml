@@ -1,0 +1,26 @@
+[project]
+name = "converter"
+version = "0.1.0"
+description = "XText meta grammar built in Lark to parse SysML V2 grammar files."
+readme = "README.md"
+authors = [
+    {name = "Maguire Papay", email = "papaymaguire@gmail.com"},
+]
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "typer>=0.15.3",
+    "lark>=1.1.9",
+]
+
+
+[project.scripts]
+converter = "converter.cli:app"
+
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"

@@ -1,0 +1,7 @@
+grammar org.omg.kerml.expressions.xtext.KerMLExpressions hidden(WS, ML_NOTE, SL_NOTE)
+
+terminal SL_NOTE:
+	'//' (!('\n' | '\r') !('\n' | '\r')*)? ('\r'? '\n')?;
+
+terminal WS:
+	(' ' | '\t' | '\r' | '\n')+;

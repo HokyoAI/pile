@@ -1,0 +1,52 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/typescript-node
+{
+  "name": "Pile Devcontainer",
+  // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
+  "build": {
+    // Path is relative to the devcontainer.json file.
+    "dockerfile": "./Dockerfile.devcontainer",
+    "context": ".."
+  },
+
+  "remoteUser": "root",
+  "containerUser": "root",
+
+  // Features to add to the dev container. More info: https://containers.dev/features.
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+
+  // Use 'forwardPorts' to make a list of ports inside the container available locally.
+  "forwardPorts": [],
+
+  // Use 'postCreateCommand' to run commands after the container is created.
+  "postCreateCommand": {},
+
+  "customizations": {
+    // Configure properties specific to VS Code.
+    "vscode": {
+      // Set *default* container specific settings.json values on container create.
+      "settings": {
+        "[python]": {
+          "editor.formatOnSave": true,
+          "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit"
+          },
+          "editor.defaultFormatter": "charliermarsh.ruff"
+        },
+        "ruff.organizeImports": false,
+        "isort.args":["--profile", "black"]
+      },
+      "extensions": [
+        "streetsidesoftware.code-spell-checker",
+        "usernamehw.errorlens",
+        "eamodio.gitlens",
+        "oderwat.indent-rainbow",
+        "ms-azuretools.vscode-containers",
+        "ms-python.python",
+        "charliermarsh.ruff"
+      ]
+    }
+  }
+}

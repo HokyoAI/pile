@@ -1,0 +1,97 @@
+start: grammar_declaration (import_statement | rule_statement)*
+
+NAME: /[a-zA-Z][a-zA-Z0-9_]*/
+
+grammar_declaration: "grammar" qualified_name hidden_section? with_section?
+with_section: "with" qualified_name
+hidden_section: "hidden" "(" hidden_item_list ")"
+hidden_item_list: NAME ("," NAME)*
+qualified_name: NAME ("." NAME)*
+
+
+// Define the import statement rule with all its variants
+import_statement: simple_import | import_with_alias
+simple_import: "import" IMPORT_URL
+import_with_alias: "import" IMPORT_URL "as" NAME
+IMPORT_URL: QUOTED_URL | SINGLE_QUOTED_URL
+QUOTED_URL: "\"" URL_CONTENT "\""
+SINGLE_QUOTED_URL: "'" URL_CONTENT "'"
+URL_CONTENT: /[^"']+/
+
+
+data_type: NAME "::" qualified_name  // Must match an imported alias
+
+
+rule_statement: DECORATORS* TERMINAL? ENUM? FRAGMENT? NAME returns_section? ":" rule_body ";"
+
+// Returns section (example: "returns SysML::Element")
+returns_section: "returns" data_type
+
+// Rule to match XText rule body with alternatives and sequences
+rule_body: alternative
+alternative: sequence ("|" sequence)*
+sequence: element+
+
+element: NAME (cardinality)? | assignment | literal | group | non_parsing_assignment | type_spec | terminal_rules
+// element: terminal_element
+//        | non_terminal_element
+//        | "(" alternative ")"
+//        | element cardinality
+
+assignment: property_assignment | list_prop_assignment | bool_prop_assignment
+type_spec: "{" data_type "}"
+property_assignment: type_spec? NAME "=" valid_right_sides
+list_prop_assignment: type_spec? NAME "+=" valid_right_sides
+bool_prop_assignment: type_spec? NAME "?=" valid_right_sides
+
+non_parsing_assignment: non_parsing_equals | non_parsing_list
+non_parsing_equals: "{" data_type "=" valid_right_sides "}"
+non_parsing_list: "{" data_type "+=" valid_right_sides "}"
+
+valid_right_sides: NAME | name_resolution | literal
+
+name_resolution: "[" (NAME | data_type) ("|" (NAME | data_type))* "]"
+
+literal: (DOUBLE_QUOTED_STRING | SINGLE_QUOTED_STRING | WS_LITERALS) optional?
+DOUBLE_QUOTED_STRING: /"(\\.|[^"])*"/ //either a backslash and anything or any character that isn't a double quote
+SINGLE_QUOTED_STRING: /'(\\.|[^'])*'/
+WS_LITERALS: SPACE_LITERAL | TAB_LITERAL | CR_LITERAL | LF_LITERAL
+SPACE_LITERAL: "' '" | "\" \""  // ' ' or " "
+TAB_LITERAL: "'\\t'" | "\"\\t\"" // '\t' or "\t"
+CR_LITERAL: "'\\r'" | "\"\\r\"" // '\r' or "\r"
+LF_LITERAL: "'\\n'" | "\"\\n\"" // '\n' or "\n"
+
+
+// Cardinality operators
+optional: "?"
+multiplicity: "*" | "+"
+cardinality: optional | multiplicity
+negation: "!"
+group: negation? "(" rule_body ")" cardinality?
+
+
+terminal_rules: char_range | wildcard | until
+char_range: literal ".." literal
+wildcard: literal "." literal
+until: literal "->" literal
+
+
+// keywords for rule_statements
+// Down at the bottom because they are self explanatory
+TERMINAL: "terminal"
+ENUM: "enum"
+FRAGMENT: "fragment"
+
+// Down at the bottom because they aren't very important
+OVERRIDE_DECORATOR: "@Override"
+FINAL_DECORARTOR: "@Final"
+DEPRECATED_DECORATOR: "@Deprecated"
+EXPORT_DECORATOR: "@Exported"
+DECORATORS: OVERRIDE_DECORATOR | FINAL_DECORARTOR | DEPRECATED_DECORATOR | EXPORT_DECORATOR
+
+
+_WS: /[ \t\r\n]+/
+_COMMENT: /\/\/[^\n]*/ | /\/\*(.|\n)*?\*\//
+
+%ignore _WS
+%ignore _COMMENT

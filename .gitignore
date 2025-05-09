@@ -1,0 +1,12 @@
+# Custom
+
+build/
+__pycache__/
+charts/
+.env
+.env.*
+dist
+.ruff_cache
+cache/
+.cache/
+.venv
