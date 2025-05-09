@@ -1,34 +1,16 @@
 import typer
-from pathlib import Path
-from rich import print
 
 app = typer.Typer()
 
 
 @app.command()
-def try_load():
+def parse():
     """
-    Convert a file from one format to another.
+    Attempt to parse the KerML and SysML files using the Lark parser.
     """
-    from lark import Lark
+    from .parser import parse as fparse
 
-    this_file = Path(__file__)
-    meta_grammar_file = this_file.parent / "lark" / "meta.lark"
-    xtext_file = this_file.parent / "xtext" / "KerMLExpressions.xtext"
-    # xtext_file = this_file.parent / "xtext" / "test.xtext"
-    parser = None
-    with open(meta_grammar_file, "r") as f:
-        parser = Lark(f)
-        #    parser="lalr")
-
-    xtext_content = None
-    with open(xtext_file, "r") as f:
-        xtext_content = f.read()
-
-    tree = parser.parse(xtext_content)
-
-    print("Parser loaded successfully.")
-    print(tree.pretty())
+    fparse()
 
 
 if __name__ == "__main__":

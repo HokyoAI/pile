@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/devcontainers/base:ubuntu-22.04
 
 # install uv and python
-ENV UV_CACHE_DIR="/workspaces/hokyo/.cache/uv"
+ENV UV_CACHE_DIR="/workspaces/pile/.cache/uv"
 RUN curl -LsSf https://astral.sh/uv/0.6.17/install.sh | sh
 RUN ~/.local/bin/uv python install 3.13
 

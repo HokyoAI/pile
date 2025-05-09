@@ -30,6 +30,22 @@ wheels = [
 ]
 
 [[package]]
+name = "converter"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "lark", version = "1.1.9", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.8'" },
+    { name = "lark", version = "1.2.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.8'" },
+    { name = "typer" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "lark", specifier = ">=1.1.9" },
+    { name = "typer", specifier = ">=0.15.3" },
+]
+
+[[package]]
 name = "importlib-metadata"
 version = "6.7.0"
 source = { registry = "https://pypi.org/simple" }
@@ -176,26 +192,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/58/15/8b3609fd3830ef7b2
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e0/f9/0595336914c5619e5f28a1fb793285925a8cd4b432c9da0a987836c7f822/shellingham-1.5.4-py2.py3-none-any.whl", hash = "sha256:7ecfff8f2fd72616f7481040475a65b2bf8af90a56c89140852d1120324e8686", size = 9755, upload_time = "2023-10-24T04:13:38.866Z" },
 ]
-
-[[package]]
-name = "snakes"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "typer" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "lark", version = "1.1.9", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.8'" },
-    { name = "lark", version = "1.2.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.8'" },
-]
-
-[package.metadata]
-requires-dist = [{ name = "typer", specifier = ">=0.15.3" }]
-
-[package.metadata.requires-dev]
-dev = [{ name = "lark", specifier = ">=1.1.9" }]
 
 [[package]]
 name = "typer"
