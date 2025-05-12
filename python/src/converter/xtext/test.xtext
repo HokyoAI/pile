@@ -5,6 +5,31 @@ import "https://www.omg.org/spec/SysML/20230201" as SysML
 
 /* ROOT NAMESPACE */
 
+
+terminal SL_NOTE:
+	'//' (!('\n' | '\r') !('\n' | '\r')*)? ('\r'? '\n')?;
+
+TargetExpression returns SysML::Expression :
+	BaseExpression
+	( ( {SysML::FeatureChainExpression.operand += current} '.' 
+	  ownedRelationship += FeatureChainMember
+	  )?
+	  ( {SysML::OperatorExpression.operand += current} 
+	    operator = '[' operand += SequenceExpression ']'
+	  | {SysML::OperatorExpression.operand += current} '->' 
+	    ownedRelationship += ReferenceTyping 
+	    ( ownedRelationship += ExpressionBodyMember 
+	    | ownedRelationship += FunctionReferenceMember 
+	    | ArgumentList
+	    ) 
+	  | {SysML::CollectExpression.operand += current} '.'
+	    ownedRelationship += ExpressionBodyMember 
+	  | {SysML::SelectExpression.operand += current} '.?'
+	    ownedRelationship += ExpressionBodyMember 
+	  )
+	)*
+;
+
 Dependency returns SysML::Dependency :
 	( ownedRelationship += PrefixMetadataAnnotation )*
 	'dependency' ( Identification? 'from' )?

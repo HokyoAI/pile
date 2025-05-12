@@ -21,38 +21,54 @@ URL_CONTENT: /[^"']+/
 
 data_type: name "::" qualified_name  // Must match an imported alias
 
-rule_statement: decorators* rule_modifiers* rule_name return_type? ":" statements ";"
+rule_statement: decorators* rule_modifiers* rule_name return_type? ":" rule_body ";"
 rule_name: name
 // Returns section (example: "returns SysML::Element")
 return_type: "returns" data_type
 
 // Rule to match XText rule body with alternatives and sequences
 // Top-level structure
+rule_body: statements // Use rule_body so we can transform on it
 statements: alternative
 
 // Structural constructs
 alternative: sequence ("|" sequence)*
 sequence: item+
-item: element | group | predicate
+item: basic_element | group | predicate | assignment_item
 
-group: explicit_group | single_group
-explicit_group: negation? "(" statements ")" cardinality?
-single_group: negation? element cardinality?
+group: _explicit_group | _single_group
+_explicit_group: negation? "(" statements ")" cardinality?
+_single_group: negation? basic_element cardinality?
 optional: "?"
-multiplicity: "*" | "+"
-cardinality: optional | multiplicity
+at_least_one: "+"
+zero_or_more: "*"
+cardinality: optional | at_least_one | zero_or_more
 negation: "!"
 
 predicate: ("->" | "=>") statements
 
-// Atomic elements
-element: name 
-       | literal 
-       | terminal_rules 
-       | type_spec 
-       | assignment 
-       | non_parsing_assignment 
+// Assignment structures
+type_spec: "{" data_type "}"
+assignment_item: property_assignment | list_prop_assignment | bool_prop_assignment | non_parsing_assignment
+property_assignment: left_sides "=" right_sides
+list_prop_assignment: left_sides "+=" right_sides
+bool_prop_assignment: left_sides "?=" right_sides
 
+non_parsing_assignment: non_parsing_type | non_parsing_equals | non_parsing_list
+non_parsing_type: "{" data_type "}"
+non_parsing_equals: "{" left_sides "=" right_sides "}"
+non_parsing_list: "{" left_sides "+=" right_sides "}"
+
+left_sides: (type_spec? name) | data_type
+right_sides: XTEXT_CURRENT | name_resolution | group 
+XTEXT_CURRENT: "current"
+name_resolution: "[" (name | data_type) ("|" (name | data_type))* "]"
+
+// Basic atomic elements
+basic_element: rule_call | pure_parsing
+rule_call: name
+
+pure_parsing: literal | terminal_rules
 
 literal: (DOUBLE_QUOTED_STRING | SINGLE_QUOTED_STRING | WS_LITERALS)
 // lone backslash is not valid in a string literal
@@ -70,20 +86,6 @@ char_range: literal ".." literal
 wildcard: literal "." literal
 until: literal "->" literal
 
-type_spec: "{" data_type "}"
-
-assignment: property_assignment | list_prop_assignment | bool_prop_assignment
-property_assignment: type_spec? name "=" valid_right_sides
-list_prop_assignment: type_spec? name "+=" valid_right_sides
-bool_prop_assignment: type_spec? name "?=" valid_right_sides
-
-non_parsing_assignment: non_parsing_equals | non_parsing_list
-non_parsing_equals: "{" data_type "=" valid_right_sides "}"
-non_parsing_list: "{" data_type "+=" valid_right_sides "}"
-
-valid_right_sides: name | name_resolution | literal | group
-
-name_resolution: "[" (name | data_type) ("|" (name | data_type))* "]"
 
 // rule modifiers
 rule_modifiers: terminal_mod | enum_mod | fragment_mod

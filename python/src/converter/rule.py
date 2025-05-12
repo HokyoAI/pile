@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from typing import ClassVar
 from .utils import REQUIRED, DEFAULT_RETURN_TYPE, DefaultReturnType
+from .expression import Expression
 
 
 @dataclass
@@ -19,7 +20,7 @@ class XTextRule:
 
     name: str = field(default=REQUIRED)
 
-    statements: str = field(default=REQUIRED)
+    body: Expression = field(default=REQUIRED)
 
     # the qualified name is split
     return_type: list[str] | DefaultReturnType = field(default=DEFAULT_RETURN_TYPE)
