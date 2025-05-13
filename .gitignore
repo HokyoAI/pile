@@ -1,6 +1,5 @@
 # Custom
 
-build/
 __pycache__/
 charts/
 .env

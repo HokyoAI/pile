@@ -2,6 +2,7 @@ from pathlib import Path
 from lark import Lark
 from rich import print
 from .visitor import XTextVisitor, XTextRuleVisitor
+from .rule import XTextRule
 
 
 def parse():
@@ -30,33 +31,81 @@ def parse():
     visitor.visit_topdown(sysml_tree)
     visitor.visit_topdown(kerml_tree)
 
-    # test_file = this_file.parent / "xtext" / "test.xtext"
-    # test_2_file = this_file.parent / "xtext" / "test2.xtext"
-
-    # test_content = None
-    # with open(test_file, "r") as f:
-    #     test_content = f.read()
-
-    # test_2_content = None
-    # with open(test_2_file, "r") as f:
-    #     test_2_content = f.read()
-
-    # test_tree = parser.parse(test_content)
-    # test_2_tree = parser.parse(test_2_content)
-
-    # visitor = XTextVisitor()
-    # visitor.visit_topdown(test_tree)
-    # visitor.visit_topdown(test_2_tree)
-
-    if len(visitor.rules) == 0:
-        print("No rules found in the XText file.")
-        return
-
-    start_rule = None
+    rules: list[XTextRule] = []
     for idx, rule in enumerate(visitor.rules):
         rule_visitor = XTextRuleVisitor()
         rule_visitor.visit_topdown(rule)
-        if idx == 0:
-            start_rule = rule_visitor.rule
+        rules.append(rule_visitor.rule)
 
-    print(str(start_rule.body))
+    return rules
+
+
+def _remove_overriden_rules(full_ruleset: list[XTextRule], rule: XTextRule):
+    """Remove rules that are overridden by the given rule."""
+    indexes_to_remove = []
+    for idx, existing_rule in enumerate(full_ruleset):
+        if existing_rule.name == rule.name:
+            indexes_to_remove.append(idx)
+    # Remove items in reverse order to avoid index shifting problems
+    for idx in sorted(indexes_to_remove, reverse=True):
+        full_ruleset.pop(idx)
+
+
+def validate_rules(rules: list[XTextRule]):
+    if len(rules) == 0:
+        print("No rules found.")
+        return
+
+    full_ruleset: list[XTextRule] = []
+
+    defined_rule_names = set()
+    used_rule_names = set()
+    transformed_rule_names: dict[str, str] = {}
+    overriden_rule_names: set[str] = set()
+    finalized_rule_names: set[str] = set()
+    for rule in rules:
+        if rule.name in finalized_rule_names:
+            if rule.is_final:
+                raise ValueError(f"Rule '{rule.name}' is marked as final twice")
+            else:
+                print(f"Warning: Rule '{rule.name}' has already been finalized.")
+                continue
+
+        # for overrides, ignore any future rules but don't error
+        if rule.name in overriden_rule_names:
+            print(f"Warning: Rule '{rule.name}' is overridden.")
+            continue
+
+        defined_rule_names.add(rule.name)
+        used_rule_names.update(rule.called_rules)
+
+        if rule.is_final:
+            finalized_rule_names.add(rule.name)
+            _remove_overriden_rules(full_ruleset, rule)
+
+        if rule.is_override:
+            overriden_rule_names.add(rule.name)
+            _remove_overriden_rules(full_ruleset, rule)
+
+        full_ruleset.append(rule)
+
+    undefined_rule_names = used_rule_names - defined_rule_names
+    if undefined_rule_names:
+        print("Warning: Some rules are used but not defined.")
+        print(f"Undefined Rules: {undefined_rule_names}")
+        return
+
+    return full_ruleset
+
+
+"""
+Need to handle the following cases:
+empty expressions give us rules like this
+empty_feature:
+
+terminal rules, regexs, and enum rules
+
+override and final decorators
+
+hidden section of grammar
+"""

@@ -19,6 +19,7 @@ class XTextRule:
     is_fragment: bool = False
 
     name: str = field(default=REQUIRED)
+    called_rules: set[str] = field(default_factory=set)
 
     body: Expression = field(default=REQUIRED)
 

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Optional
 from enum import Enum
-from .utils import pascal_to_snake_case
+import re
 
 
 class CardinalityType(Enum):
@@ -44,8 +44,7 @@ class RegularExpression(AtomicExpression):
 class RuleCallExpression(AtomicExpression):
     """Represents a rule call expression"""
 
-    def __str__(self):
-        return pascal_to_snake_case(self.value)
+    pass
 
 
 @dataclass
@@ -84,6 +83,52 @@ class GroupExpression(Expression):
     cardinality_type: Optional[CardinalityType] = None
 
     def __str__(self):
+        # Check if the expression is negated and contains only LiteralExpressions
+        def contains_only_literals(expr):
+            if isinstance(expr, LiteralExpression):
+                return True
+            elif isinstance(expr, SequenceExpression) or isinstance(expr, OrExpression):
+                return all(contains_only_literals(e) for e in expr.expressions)
+            elif isinstance(expr, GroupExpression):
+                return contains_only_literals(expr.expression)
+            else:
+                return False
+
+        # Special handling for negated expressions containing only literals
+        if self.negated and contains_only_literals(self.expression):
+            # Handle negated literals by creating a regex expression
+            # For example: !("a" | "b") becomes /[^ab]/
+            literals = []
+
+            def extract_literals(expr):
+                if isinstance(expr, LiteralExpression):
+                    # Strip quotes from literal values
+                    val = expr.value.strip("\"'")
+                    literals.append(val)
+                elif isinstance(expr, SequenceExpression) or isinstance(
+                    expr, OrExpression
+                ):
+                    for e in expr.expressions:
+                        extract_literals(e)
+                elif isinstance(expr, GroupExpression):
+                    extract_literals(expr.expression)
+
+            extract_literals(self.expression)
+
+            if literals:
+                # Escape special regex characters
+                escaped_literals = [re.escape(lit) for lit in literals]
+                regex_content = "".join(escaped_literals)
+
+                # Create negated character class
+                regex_expr = f"/[^{regex_content}]/"
+
+                # Add cardinality if present
+                if self.cardinality_type is not None:
+                    regex_expr = f"{regex_expr}{self.cardinality_type.value}"
+
+                return regex_expr
+
         result = f"{'!' if self.negated else ''}({str(self.expression)})"
         if self.cardinality_type is not None:
             result += f"{self.cardinality_type.value}"

@@ -1,0 +1,1072 @@
+start: root_namespace 
+
+root_namespace:  (package_body_element)* 
+
+identification: "<" name ">" (name)? | name 
+
+relationship_body: ";" | "{" (owned_annotation)* "}" 
+
+dependency: (prefix_metadata_annotation)* "dependency" ((identification)? "from")? qualified_name ("," qualified_name)* "to" qualified_name ("," qualified_name)* relationship_body 
+
+annotation: qualified_name 
+
+owned_annotation: annotating_element 
+
+annotating_member: annotating_element 
+
+annotating_element: comment | documentation | textual_representation | metadata_usage 
+
+comment: ("comment" (identification)? ("about" annotation ("," annotation)*)?)? regular_comment 
+
+documentation: "doc" (identification)? regular_comment 
+
+textual_representation: ("rep" (identification)?)? "language" string_value regular_comment 
+
+metadata_keyword: "metadata" 
+
+metadata_def_keyword: metadata_keyword "def" 
+
+metadata_usage_keyword: metadata_keyword | "@" 
+
+metadata_definition: ("abstract")? metadata_def_keyword definition 
+
+prefix_metadata_annotation: "#" prefix_metadata_usage 
+
+prefix_metadata_member: "#" prefix_metadata_usage 
+
+prefix_metadata_usage: metadata_typing 
+
+metadata_usage: metadata_usage_keyword metadata_usage_declaration ("about" annotation ("," annotation)*)? metadata_body 
+
+metadata_usage_declaration: ((identification)? defined_by_keyword)? metadata_typing 
+
+metadata_typing: qualified_name 
+
+metadata_body: ";" | "{" (definition_member | metadata_body_usage_member | alias_member | import)* "}" 
+
+metadata_body_usage_member: metadata_body_usage 
+
+metadata_body_usage: ("ref")? (":>>" | "redefines")? owned_redefinition (feature_specialization_part)? (value_part)? metadata_body 
+
+package: (prefix_metadata_member)* package_declaration package_body 
+
+library_package: ("standard")? "library" (prefix_metadata_member)* package_declaration package_body 
+
+package_declaration: "package" (identification)? 
+
+package_body: ";" | "{" (package_member | element_filter_member | alias_member | import)* "}" 
+
+package_body_element: package_member | element_filter_member | alias_member | import 
+
+member_prefix: (visibility_indicator)? 
+
+package_member: member_prefix definition_element | usage_element 
+
+element_filter_member: member_prefix "filter" owned_expression ";" 
+
+alias_member: member_prefix "alias" ("<" name ">")? (name)? "for" qualified_name relationship_body 
+
+import_prefix: (visibility_indicator)? "import" ("all")? 
+
+import: membership_import | namespace_import relationship_body 
+
+membership_import: import_prefix imported_membership 
+
+imported_membership: qualified_name ("::" "**")? 
+
+namespace_import: import_prefix imported_namespace | filter_package 
+
+imported_namespace: qualified_name "::" "*" ("::" "**")? 
+
+filter_package: filter_package_import (filter_package_member)+ 
+
+filter_package_import: filter_package_membership_import | filter_package_namespace_import 
+
+filter_package_membership_import: imported_membership 
+
+filter_package_namespace_import: imported_namespace 
+
+filter_package_member: filter_package_member_visibility owned_expression "]" 
+
+filter_package_member_visibility: "[" 
+
+visibility_indicator: "public" | "private" | "protected" 
+
+definition_element: package | library_package | annotating_element | dependency | attribute_definition | enumeration_definition | occurrence_definition | individual_definition | item_definition | metadata_definition | part_definition | connection_definition | flow_connection_definition | interface_definition | allocation_definition | port_definition | action_definition | calculation_definition | state_definition | constraint_definition | requirement_definition | concern_definition | case_definition | analysis_case_definition | verification_case_definition | use_case_definition | view_definition | viewpoint_definition | rendering_definition | extended_definition 
+
+usage_element: non_occurrence_usage_element | occurrence_usage_element 
+
+subclassification_part: specializes_keyword owned_subclassification ("," owned_subclassification)* 
+
+specializes_keyword: ":>" | "specializes" 
+
+owned_subclassification: qualified_name 
+
+feature_declaration: identification (feature_specialization_part)? | feature_specialization_part 
+
+feature_specialization_part: (feature_specialization)+ (multiplicity_part)? (feature_specialization)* | multiplicity_part (feature_specialization)* 
+
+multiplicity_part: owned_multiplicity | (owned_multiplicity)? "ordered" ("nonunique")? | "nonunique" ("ordered")? 
+
+feature_specialization: typings | subsettings | references | redefinitions 
+
+typings: typed_by ("," feature_typing)* 
+
+typed_by: defined_by_keyword feature_typing 
+
+defined_by_keyword: ":" | "defined" "by" 
+
+subsettings: subsets ("," owned_subsetting)* 
+
+subsets: subsets_keyword owned_subsetting 
+
+subsets_keyword: ":>" | "subsets" 
+
+references: references_keyword owned_reference_subsetting 
+
+references_keyword: "::>" | "references" 
+
+redefinitions: redefines ("," owned_redefinition)* 
+
+redefines: redefines_keyword owned_redefinition 
+
+redefines_keyword: ":>>" | "redefines" 
+
+feature_typing: owned_feature_typing | conjugated_port_typing 
+
+owned_subsetting: qualified_name | owned_feature_chain 
+
+owned_reference_subsetting: qualified_name | owned_feature_chain 
+
+owned_redefinition: qualified_name | owned_feature_chain 
+
+owned_multiplicity: multiplicity_range 
+
+multiplicity_range: "[" multiplicity_expression_member (".." multiplicity_expression_member)? "]" 
+
+multiplicity_expression_member: literal_expression | feature_reference_expression 
+
+basic_definition_prefix: "abstract" | "variation" 
+
+definition_extension_keyword: prefix_metadata_member 
+
+definition_prefix: (basic_definition_prefix)? (definition_extension_keyword)* 
+
+definition: definition_declaration definition_body 
+
+definition_declaration: (identification)? (subclassification_part)? 
+
+definition_body: ";" | "{" (definition_body_item)* "}" 
+
+definition_body_item: definition_member | variant_usage_member | non_occurrence_usage_member | (empty_succession_member)? occurrence_usage_member | alias_member | import 
+
+definition_member: member_prefix definition_element 
+
+variant_usage_member: member_prefix "variant" variant_usage_element 
+
+non_occurrence_usage_member: member_prefix non_occurrence_usage_element 
+
+occurrence_usage_member: member_prefix occurrence_usage_element 
+
+structure_usage_member: member_prefix structure_usage_element 
+
+behavior_usage_member: member_prefix behavior_usage_element 
+
+feature_direction: "in" | "out" | "inout" 
+
+ref_prefix: (feature_direction)? ("abstract" | "variation")? ("readonly")? ("derived")? ("end")? 
+
+basic_usage_prefix: ref_prefix ("ref")? 
+
+usage_extension_keyword: prefix_metadata_member 
+
+usage_prefix: basic_usage_prefix (usage_extension_keyword)* 
+
+usage: (usage_declaration)? usage_completion 
+
+usage_declaration: feature_declaration 
+
+usage_completion: (value_part)? usage_body 
+
+usage_body: definition_body 
+
+value_part: feature_value | feature_value_expression empty_assignment_action_member 
+
+feature_value: "=" | "default" ("=" | ":=")? owned_expression 
+
+feature_value_expression: ":=" owned_expression 
+
+empty_assignment_action_member: empty_assignment_action 
+
+empty_assignment_action: empty_target_member empty_parameter_member 
+
+empty_target_member: empty_target_parameter 
+
+empty_target_parameter: target_feature_member 
+
+reference_keyword: "ref" 
+
+reference_usage_keyword: reference_keyword 
+
+default_reference_usage: ref_prefix usage_declaration (value_part)? usage_body 
+
+reference_usage: ref_prefix reference_usage_keyword usage 
+
+variant_reference: owned_reference_subsetting (feature_specialization)* usage_body 
+
+non_occurrence_usage_element: default_reference_usage | reference_usage | attribute_usage | enumeration_usage | binding_connector | succession | extended_usage 
+
+occurrence_usage_element: structure_usage_element | behavior_usage_element 
+
+structure_usage_element: occurrence_usage | individual_usage | portion_usage | event_occurrence_usage | item_usage | part_usage | view_usage | rendering_usage | port_usage | connection_usage | interface_usage | allocation_usage | message | flow_connection_usage | succession_flow_connection_usage 
+
+behavior_usage_element: action_usage | calculation_usage | state_usage | constraint_usage | requirement_usage | concern_usage | case_usage | analysis_case_usage | verification_case_usage | use_case_usage | viewpoint_usage | perform_action_usage | exhibit_state_usage | include_use_case_usage | assert_constraint_usage | satisfy_requirement_usage 
+
+variant_usage_element: variant_reference | reference_usage | attribute_usage | binding_connector | succession | occurrence_usage | individual_usage | portion_usage | event_occurrence_usage | item_usage | part_usage | view_usage | rendering_usage | port_usage | connection_usage | interface_usage | allocation_usage | message | flow_connection_usage | succession_flow_connection_usage | behavior_usage_element 
+
+extended_definition: (basic_definition_prefix)? (definition_extension_keyword)+ "def" definition 
+
+extended_usage: basic_usage_prefix (usage_extension_keyword)+ usage 
+
+attribute_keyword: "attribute" 
+
+attribute_def_keyword: attribute_keyword "def" 
+
+attribute_usage_keyword: attribute_keyword 
+
+attribute_definition: definition_prefix attribute_def_keyword definition 
+
+attribute_usage: usage_prefix attribute_usage_keyword usage 
+
+enumeration_keyword: "enum" 
+
+enumeration_def_keyword: enumeration_keyword "def" 
+
+enumeration_usage_keyword: enumeration_keyword 
+
+enumeration_definition: enumeration_def_keyword definition_declaration enumeration_body 
+
+enumeration_body: ";" | "{" (annotating_member | enumeration_usage_member)* "}" 
+
+enumeration_usage_member: member_prefix enumerated_value 
+
+enumerated_value: (enumeration_usage_keyword)? usage 
+
+enumeration_usage: usage_prefix enumeration_usage_keyword usage 
+
+occurrence_keyword: "occurrence" 
+
+occurrence_def_keyword: occurrence_keyword "def" 
+
+occurrence_definition_prefix: (basic_definition_prefix)? ("individual" life_class_membership)? (definition_extension_keyword)* 
+
+occurrence_definition: occurrence_definition_prefix occurrence_def_keyword definition 
+
+individual_definition: (basic_definition_prefix)? "individual" (definition_extension_keyword)* "def" definition life_class_membership 
+
+life_class_membership: life_class 
+
+life_class:  
+
+occurrence_usage_keyword: occurrence_keyword 
+
+occurrence_usage_prefix: basic_usage_prefix ("individual")? (portion_kind)? (usage_extension_keyword)* 
+
+occurrence_usage: occurrence_usage_prefix occurrence_usage_keyword usage 
+
+individual_usage: basic_usage_prefix "individual" (usage_extension_keyword)* usage 
+
+portion_usage: basic_usage_prefix ("individual")? portion_kind (usage_extension_keyword)* usage 
+
+portion_kind: "snapshot" | "timeslice" 
+
+event_occurrence_usage: occurrence_usage_prefix "event" owned_reference_subsetting (feature_specialization_part)? | occurrence_usage_keyword (usage_declaration)? usage_completion 
+
+empty_succession_member: empty_succession 
+
+empty_succession: "then" multiplicity_source_end_member empty_target_end_member 
+
+multiplicity_source_end_member: multiplicity_source_end 
+
+multiplicity_source_end:  (owned_multiplicity)? 
+
+empty_target_end_member: empty_target_end 
+
+empty_target_end:  
+
+item_keyword: "item" 
+
+item_def_keyword: item_keyword "def" 
+
+item_usage_keyword: item_keyword 
+
+item_definition: occurrence_definition_prefix item_def_keyword definition 
+
+item_usage: occurrence_usage_prefix item_usage_keyword usage 
+
+part_keyword: "part" 
+
+part_def_keyword: part_keyword "def" 
+
+part_usage_keyword: part_keyword 
+
+part_definition: occurrence_definition_prefix part_def_keyword definition 
+
+part_usage: occurrence_usage_prefix part_usage_keyword usage 
+
+port_keyword: "port" 
+
+port_def_keyword: port_keyword "def" 
+
+port_definition: definition_prefix port_def_keyword definition conjugated_port_definition_member 
+
+conjugated_port_definition_member: conjugated_port_definition 
+
+conjugated_port_definition: port_conjugation 
+
+port_conjugation:  
+
+conjugated_port_typing: conjugated_qualified_name 
+
+conjugated_qualified_name: "~" qualified_name 
+
+port_usage_keyword: port_keyword 
+
+port_usage: occurrence_usage_prefix port_usage_keyword usage 
+
+connector_end_member: connector_end 
+
+connector_end: (name references_keyword)? owned_reference_subsetting (owned_multiplicity)? 
+
+binding_keyword: "binding" 
+
+binding_connector: usage_prefix (binding_keyword (usage_declaration)?)? "bind" connector_end_member "=" connector_end_member definition_body 
+
+succession_keyword: "succession" 
+
+succession: usage_prefix (succession_keyword (usage_declaration)?)? "first" connector_end_member "then" connector_end_member definition_body 
+
+connection_keyword: "connection" 
+
+connection_def_keyword: connection_keyword "def" 
+
+connection_definition: occurrence_definition_prefix connection_def_keyword definition 
+
+connector_keyword: "connect" 
+
+connection_usage_keyword: connection_keyword 
+
+connection_usage: occurrence_usage_prefix connection_usage_keyword (usage_declaration)? (connector_keyword connector_part)? | connector_keyword connector_part usage_body 
+
+connector_part: binary_connector_part | nary_connector_part 
+
+binary_connector_part: connector_end_member "to" connector_end_member 
+
+nary_connector_part: "(" connector_end_member "," connector_end_member ("," connector_end_member)* ")" 
+
+empty_source_end_member: empty_source_end 
+
+empty_source_end:  
+
+flow_connection_keyword: "flow" 
+
+flow_connection_def_keyword: flow_connection_keyword "def" 
+
+flow_connection_definition: occurrence_definition_prefix flow_connection_def_keyword definition 
+
+message_keyword: "message" 
+
+message: occurrence_usage_prefix message_keyword message_declaration definition_body 
+
+message_declaration: (usage_declaration)? (value_part)? ("of" item_feature_member)? ("from" message_event_member "to" message_event_member)? | message_event_member "to" message_event_member 
+
+message_event_member: message_event 
+
+message_event: owned_reference_subsetting 
+
+flow_connection_usage: occurrence_usage_prefix flow_connection_keyword flow_connection_declaration definition_body 
+
+succession_flow_connection_keyword: succession_keyword flow_connection_keyword 
+
+succession_flow_connection_usage: occurrence_usage_prefix succession_flow_connection_keyword flow_connection_declaration definition_body 
+
+flow_connection_declaration: (usage_declaration)? (value_part)? ("of" item_feature_member)? ("from" flow_end_member "to" flow_end_member)? | flow_end_member "to" flow_end_member 
+
+item_feature_member: item_feature 
+
+item_feature: payload_feature 
+
+payload_feature: (identification)? payload_feature_specialization_part (value_part)? | (identification)? value_part | owned_feature_typing (owned_multiplicity)? | owned_multiplicity owned_feature_typing 
+
+payload_feature_specialization_part: (feature_specialization)+ (multiplicity_part)? (feature_specialization)* | multiplicity_part (feature_specialization)+ 
+
+flow_end_member: flow_end 
+
+flow_end: (flow_end_subsetting)? flow_feature_member 
+
+flow_end_subsetting: qualified_name "." | feature_chain_prefix 
+
+feature_chain_prefix: (owned_feature_chaining ".")+ owned_feature_chaining "." 
+
+flow_feature_member: flow_feature 
+
+flow_feature: flow_redefinition 
+
+flow_redefinition: qualified_name 
+
+interface_keyword: "interface" 
+
+interface_def_keyword: interface_keyword "def" 
+
+interface_definition: occurrence_definition_prefix interface_def_keyword definition_declaration interface_body 
+
+interface_body: ";" | "{" (interface_body_item)* "}" 
+
+interface_body_item: definition_member | variant_usage_member | interface_non_occurrence_usage_member | (empty_succession_member)? interface_occurrence_usage_member | alias_member | import 
+
+interface_non_occurrence_usage_member: member_prefix interface_non_occurrence_usage_element 
+
+interface_non_occurrence_usage_element: reference_usage | attribute_usage | enumeration_usage | binding_connector | succession 
+
+interface_occurrence_usage_member: member_prefix interface_occurrence_usage_element 
+
+interface_occurrence_usage_element: default_interface_end | structure_usage_element | behavior_usage_element 
+
+default_interface_end: (feature_direction)? ("abstract" | "variation")? "end" usage 
+
+interface_usage_keyword: interface_keyword 
+
+interface_usage: occurrence_usage_prefix interface_usage_keyword interface_usage_declaration interface_body 
+
+interface_usage_declaration: (usage_declaration)? (connector_keyword interface_part)? | interface_part 
+
+interface_part: binary_interface_part | nary_interface_part 
+
+binary_interface_part: interface_end_member "to" interface_end_member 
+
+nary_interface_part: "(" interface_end_member "," interface_end_member ("," interface_end_member)* ")" 
+
+interface_end_member: interface_end 
+
+interface_end: (name references_keyword)? owned_reference_subsetting (owned_multiplicity)? 
+
+allocation_keyword: "allocation" 
+
+allocation_def_keyword: allocation_keyword "def" 
+
+allocation_definition: occurrence_definition_prefix allocation_def_keyword definition 
+
+allocation_usage_keyword: allocation_keyword 
+
+allocate_keyword: "allocate" 
+
+allocation_usage: occurrence_usage_prefix allocation_usage_declaration usage_body 
+
+allocation_usage_declaration: allocation_usage_keyword (usage_declaration)? (allocate_keyword connector_part)? | allocate_keyword connector_part 
+
+action_keyword: "action" 
+
+action_def_keyword: action_keyword "def" 
+
+action_definition: occurrence_definition_prefix action_def_keyword definition_declaration action_body 
+
+action_body: ";" | "{" (action_body_item)* "}" 
+
+action_body_item: import | alias_member | definition_member | variant_usage_member | non_occurrence_usage_member | (empty_succession_member)? structure_usage_member | initial_node_member (target_succession_member)* | (empty_succession_member)? behavior_usage_member | action_node_member (target_succession_member)* | guarded_succession_member 
+
+initial_node_member: member_prefix "first" qualified_name relationship_body 
+
+action_node_member: member_prefix action_node 
+
+target_succession_member: member_prefix action_target_succession 
+
+guarded_succession_member: guarded_succession 
+
+action_usage_keyword: action_keyword 
+
+action_usage: occurrence_usage_prefix action_usage_keyword action_usage_declaration action_body 
+
+perform_action_usage: occurrence_usage_prefix "perform" perform_action_usage_declaration action_body 
+
+perform_action_usage_declaration: owned_reference_subsetting (feature_specialization_part)? | action_usage_keyword (usage_declaration)? (value_part)? 
+
+action_usage_declaration: (usage_declaration)? (value_part)? 
+
+action_node: send_node | accept_node | assignment_node | if_node | while_loop_node | for_loop_node | control_node 
+
+action_node_usage_declaration: action_usage_keyword (usage_declaration)? 
+
+action_node_prefix: occurrence_usage_prefix (action_node_usage_declaration)? 
+
+accept_node: occurrence_usage_prefix accept_node_declaration action_body 
+
+accept_node_declaration: (action_node_usage_declaration)? "accept" accept_parameter_part 
+
+accept_parameter_part: payload_parameter_member "via" node_parameter_member | empty_parameter_member 
+
+payload_parameter_member: payload_parameter 
+
+payload_parameter: payload_feature | (identification)? (payload_feature_specialization_part)? trigger_value_part 
+
+trigger_value_part: trigger_feature_value 
+
+trigger_feature_value: trigger_expression 
+
+trigger_expression: time_trigger_kind owned_expression_member | change_trigger_kind change_expression_member 
+
+time_trigger_kind: "at" | "after" 
+
+change_trigger_kind: "when" 
+
+change_expression_member: change_expression 
+
+change_expression: change_result_expression_member 
+
+change_result_expression_member: owned_expression 
+
+send_node: occurrence_usage_prefix send_node_declaration action_body 
+
+send_node_declaration: (action_node_usage_declaration)? "send" node_parameter_member "via" node_parameter_member | empty_parameter_member "to" node_parameter_member | empty_parameter_member 
+
+node_parameter_member: node_parameter 
+
+node_parameter: feature_binding 
+
+feature_binding: owned_expression 
+
+assignment_node: occurrence_usage_prefix assignment_node_declaration action_body 
+
+assignment_node_declaration: (action_node_usage_declaration)? "assign" assignment_target_member feature_chain_member ":=" node_parameter_member 
+
+assignment_target_member: target_parameter 
+
+target_parameter: (target_binding ".")? target_feature_member 
+
+target_feature_member: target_feature 
+
+target_feature: target_accessed_feature_member 
+
+target_accessed_feature_member: empty_usage 
+
+target_binding: target_expression 
+
+target_expression: base_expression (( "." feature_chain_member)?  "[" sequence_expression "]" |  "->" reference_typing expression_body_member | function_reference_member | argument_list |  "." expression_body_member |  ".?" expression_body_member)* 
+
+expression_parameter_member: owned_expression 
+
+if_node: action_node_prefix "if" expression_parameter_member action_body_parameter_member ("else" action_body_parameter_member | if_node_parameter_member)? 
+
+action_body_parameter_member: action_body_parameter 
+
+action_body_parameter:  (action_usage_keyword (usage_declaration)?)? "{" (action_body_item)* "}" 
+
+if_node_parameter_member: if_node 
+
+while_loop_node: action_node_prefix "while" expression_parameter_member | "loop" empty_parameter_member action_body_parameter_member ("until" expression_parameter_member ";")? 
+
+for_loop_node: action_node_prefix "for" for_variable_declaration_member "in" node_parameter_member action_body_parameter_member 
+
+for_variable_declaration_member: for_variable_declaration 
+
+for_variable_declaration: usage_declaration 
+
+control_node: merge_node | decision_node | join_node | fork_node 
+
+control_node_prefix: ref_prefix ("individual")? (portion_kind)? 
+
+merge_node: control_node_prefix "merge" (usage_declaration)? action_node_body 
+
+decision_node: control_node_prefix "decide" (usage_declaration)? action_node_body 
+
+join_node: control_node_prefix "join" (usage_declaration)? action_node_body 
+
+fork_node: control_node_prefix "fork" (usage_declaration)? action_node_body 
+
+action_node_body: ";" | "{" (annotating_member)* "}" 
+
+empty_parameter_member: empty_usage 
+
+empty_usage:  
+
+action_target_succession: target_succession | guarded_target_succession | default_target_succession usage_body 
+
+target_succession: "then" multiplicity_source_end_member connector_end_member 
+
+guarded_target_succession: empty_parameter_member guard_expression_member "then" transition_succession_member 
+
+default_target_succession: empty_parameter_member "else" transition_succession_member 
+
+guarded_succession: (succession_keyword usage_declaration)? "first" transition_source_member empty_parameter_member guard_expression_member "then" transition_succession_member usage_body 
+
+state_keyword: "state" 
+
+state_def_keyword: state_keyword "def" 
+
+state_definition: occurrence_definition_prefix state_def_keyword definition_declaration state_def_body 
+
+state_def_body: ";" | ("parallel")? "{" state_body_part "}" 
+
+state_body_part: (state_body_item)* 
+
+state_body_item: import | alias_member | definition_member | variant_usage_member | non_occurrence_usage_member | (empty_succession_member)? structure_usage_member | (empty_succession_member)? behavior_usage_member (target_transition_usage_member)* | transition_usage_member | entry_action_member (entry_transition_member)* | do_action_member | exit_action_member 
+
+entry_action_member: member_prefix entry_action_kind state_action_usage 
+
+entry_action_kind: "entry" 
+
+do_action_member: member_prefix do_action_kind state_action_usage 
+
+do_action_kind: "do" 
+
+exit_action_member: member_prefix exit_action_kind state_action_usage 
+
+exit_action_kind: "exit" 
+
+entry_transition_member: member_prefix guarded_target_succession | "then" transition_succession ";" 
+
+state_action_usage: empty_action_usage ";" | performed_action_usage action_body 
+
+empty_action_usage:  
+
+performed_action_usage:  perform_action_usage_declaration |  accept_node_declaration |  send_node_declaration |  assignment_node_declaration 
+
+transition_usage_member: member_prefix transition_usage 
+
+target_transition_usage_member: member_prefix target_transition_usage 
+
+state_usage_keyword: state_keyword 
+
+state_usage: occurrence_usage_prefix state_usage_keyword action_usage_declaration state_usage_body 
+
+state_usage_body: ";" | ("parallel")? "{" state_body_part "}" 
+
+exhibit_state_usage: occurrence_usage_prefix "exhibit" owned_reference_subsetting (feature_specialization_part)? | state_usage_keyword (usage_declaration)? (value_part)? state_usage_body 
+
+transition_usage_keyword: "transition" 
+
+transition_usage: transition_usage_keyword ((usage_declaration)? "first")? transition_source_member empty_parameter_member (empty_parameter_member trigger_action_member)? (guard_expression_member)? (effect_behavior_member)? "then" transition_succession_member action_body 
+
+target_transition_usage: empty_parameter_member (transition_usage_keyword (empty_parameter_member trigger_action_member)? (guard_expression_member)? (effect_behavior_member)? | empty_parameter_member trigger_action_member (guard_expression_member)? (effect_behavior_member)? | guard_expression_member (effect_behavior_member)?)? "then" transition_succession_member action_body 
+
+transition_source_member: qualified_name | owned_feature_chain 
+
+trigger_action_member: trigger_feature_kind trigger_action 
+
+trigger_feature_kind: "accept" 
+
+trigger_action: accept_parameter_part 
+
+guard_expression_member: guard_feature_kind owned_expression 
+
+guard_feature_kind: "if" 
+
+effect_behavior_member: effect_feature_kind effect_behavior_usage 
+
+effect_feature_kind: "do" 
+
+effect_behavior_usage: empty_action_usage | performed_action_usage ("{" (action_body_item)* "}")? 
+
+transition_succession_member: transition_succession 
+
+transition_succession: empty_source_end_member connector_end_member 
+
+calculation_keyword: "calc" 
+
+calculation_def_keyword: calculation_keyword "def" 
+
+calculation_definition: occurrence_definition_prefix calculation_def_keyword definition_declaration calculation_body 
+
+calculation_body: ";" | "{" calculation_body_part "}" 
+
+calculation_body_part: (calculation_body_item)* (result_expression_member)? 
+
+calculation_body_item: action_body_item | return_parameter_member 
+
+return_parameter_member: member_prefix "return" usage_element 
+
+result_expression_member: member_prefix owned_expression 
+
+calculation_usage_keyword: calculation_keyword 
+
+calculation_usage: occurrence_usage_prefix calculation_usage_keyword calculation_usage_declaration calculation_body 
+
+calculation_usage_declaration: (usage_declaration)? (value_part)? 
+
+constraint_keyword: "constraint" 
+
+constraint_def_keyword: constraint_keyword "def" 
+
+constraint_definition: occurrence_definition_prefix constraint_def_keyword definition_declaration calculation_body 
+
+constraint_usage_keyword: constraint_keyword 
+
+constraint_usage: occurrence_usage_prefix constraint_usage_keyword calculation_usage_declaration calculation_body 
+
+assert_constraint_usage: occurrence_usage_prefix "assert" ("not")? owned_reference_subsetting (feature_specialization_part)? | constraint_usage_keyword (usage_declaration)? calculation_body 
+
+requirement_keyword: "requirement" 
+
+requirement_def_keyword: requirement_keyword "def" 
+
+requirement_definition: occurrence_definition_prefix requirement_def_keyword definition_declaration requirement_body 
+
+requirement_body: ";" | "{" (requirement_body_item)* "}" 
+
+requirement_body_item: definition_body_item | subject_member | requirement_constraint_member | framed_concern_member | requirement_verification_member | actor_member | stakeholder_member 
+
+subject_member: member_prefix subject_usage 
+
+subject_usage: "subject" (usage_extension_keyword)* usage 
+
+requirement_constraint_member: member_prefix requirement_constraint_kind requirement_constraint_usage 
+
+requirement_constraint_kind: "assume" | "require" 
+
+requirement_constraint_usage: owned_reference_subsetting (feature_specialization)* requirement_body | (usage_extension_keyword)* constraint_usage_keyword | (usage_extension_keyword)+ calculation_usage_declaration calculation_body 
+
+framed_concern_member: member_prefix framed_concern_kind framed_concern_usage 
+
+framed_concern_kind: "frame" 
+
+framed_concern_usage: owned_reference_subsetting (feature_specialization)* requirement_body | (usage_extension_keyword)* concern_usage_keyword | (usage_extension_keyword)+ calculation_usage_declaration calculation_body 
+
+actor_member: member_prefix actor_usage 
+
+actor_usage: "actor" (usage_extension_keyword)* usage 
+
+stakeholder_member: member_prefix stakeholder_usage 
+
+stakeholder_usage: "stakeholder" (usage_extension_keyword)* usage 
+
+requirement_usage_keyword: requirement_keyword 
+
+requirement_usage: occurrence_usage_prefix requirement_usage_keyword calculation_usage_declaration requirement_body 
+
+satisfy_requirement_usage: occurrence_usage_prefix ("assert")? ("not")? "satisfy" owned_reference_subsetting (feature_specialization_part)? | requirement_usage_keyword (usage_declaration)? (value_part)? ("by" satisfaction_subject_member)? requirement_body 
+
+satisfaction_subject_member: satisfaction_parameter 
+
+satisfaction_parameter: satisfaction_feature_value 
+
+satisfaction_feature_value: satisfaction_reference_expression 
+
+satisfaction_reference_expression: feature_chain_member 
+
+concern_keyword: "concern" 
+
+concern_def_keyword: concern_keyword "def" 
+
+concern_definition: occurrence_definition_prefix concern_def_keyword definition_declaration requirement_body 
+
+concern_usage_keyword: concern_keyword 
+
+concern_usage: occurrence_usage_prefix concern_usage_keyword calculation_usage_declaration requirement_body 
+
+case_keyword: "case" 
+
+case_def_keyword: case_keyword "def" 
+
+case_definition: occurrence_definition_prefix case_def_keyword definition_declaration case_body 
+
+case_body: ";" | "{" (case_body_item)* (result_expression_member)? "}" 
+
+case_body_item: calculation_body_item | subject_member | actor_member | objective_member 
+
+objective_member: member_prefix "objective" objective_requirement_usage 
+
+objective_requirement_usage: (usage_extension_keyword)* calculation_usage_declaration requirement_body 
+
+case_usage_keyword: case_keyword 
+
+case_usage: occurrence_usage_prefix case_usage_keyword calculation_usage_declaration case_body 
+
+analysis_case_keyword: "analysis" 
+
+analysis_case_def_keyword: analysis_case_keyword "def" 
+
+analysis_case_usage_keyword: analysis_case_keyword 
+
+analysis_case_definition: occurrence_definition_prefix analysis_case_def_keyword definition_declaration case_body 
+
+analysis_case_usage: occurrence_usage_prefix analysis_case_usage_keyword calculation_usage_declaration case_body 
+
+verification_case_keyword: "verification" 
+
+verification_case_def_keyword: verification_case_keyword "def" 
+
+verification_case_usage_keyword: verification_case_keyword 
+
+verification_case_definition: occurrence_definition_prefix verification_case_def_keyword definition_declaration case_body 
+
+verification_case_usage: occurrence_usage_prefix verification_case_usage_keyword calculation_usage_declaration case_body 
+
+requirement_verification_member: member_prefix requirement_verification_kind requirement_verification_usage 
+
+requirement_verification_kind: "verify" 
+
+requirement_verification_usage: owned_reference_subsetting (feature_specialization)* requirement_body | (usage_extension_keyword)* requirement_usage_keyword | (usage_extension_keyword)+ calculation_usage_declaration requirement_body 
+
+use_case_keyword: "use" "case" 
+
+use_case_def_keyword: use_case_keyword "def" 
+
+use_case_usage_keyword: use_case_keyword 
+
+use_case_definition: occurrence_definition_prefix use_case_def_keyword definition_declaration case_body 
+
+use_case_usage: occurrence_usage_prefix use_case_usage_keyword calculation_usage_declaration case_body 
+
+include_use_case_usage: occurrence_usage_prefix "include" owned_reference_subsetting (feature_specialization_part)? | use_case_usage_keyword (usage_declaration)? (value_part)? case_body 
+
+view_keyword: "view" 
+
+view_def_keyword: view_keyword "def" 
+
+view_definition: occurrence_definition_prefix view_def_keyword definition_declaration view_definition_body 
+
+view_definition_body: ";" | "{" (view_definition_body_item)* "}" 
+
+view_definition_body_item: definition_body_item | element_filter_member | view_rendering_member 
+
+view_rendering_member: member_prefix "render" view_rendering_usage 
+
+view_rendering_usage: owned_reference_subsetting (feature_specialization)* usage_body 
+
+view_usage_keyword: view_keyword 
+
+view_usage: occurrence_usage_prefix view_usage_keyword (usage_declaration)? (value_part)? view_body 
+
+view_body: ";" | "{" (view_body_item)* "}" 
+
+view_body_item: definition_body_item | element_filter_member | expose | view_rendering_member 
+
+expose: membership_expose | namespace_expose relationship_body 
+
+membership_expose: (visibility_indicator)? "expose" imported_membership 
+
+namespace_expose: (visibility_indicator)? "expose" imported_namespace | filter_package 
+
+viewpoint_keyword: "viewpoint" 
+
+viewpoint_def_keyword: viewpoint_keyword "def" 
+
+viewpoint_usage_keyword: viewpoint_keyword 
+
+viewpoint_definition: occurrence_definition_prefix viewpoint_def_keyword definition_declaration requirement_body 
+
+viewpoint_usage: occurrence_usage_prefix viewpoint_usage_keyword calculation_usage_declaration requirement_body 
+
+rendering_keyword: "rendering" 
+
+rendering_def_keyword: rendering_keyword "def" 
+
+rendering_definition: occurrence_definition_prefix rendering_def_keyword definition 
+
+rendering_usage_keyword: rendering_keyword 
+
+rendering_usage: occurrence_usage_prefix rendering_usage_keyword usage 
+
+expression_body: calculation_body 
+
+owned_expression_member: owned_expression 
+
+owned_expression: conditional_expression 
+
+owned_expression_reference: owned_expression_member 
+
+conditional_expression: null_coalescing_expression | conditional_operator null_coalescing_expression "?" owned_expression_reference "else" owned_expression_reference 
+
+conditional_operator: "if" 
+
+null_coalescing_expression: implies_expression ( null_coalescing_operator implies_expression_reference)* 
+
+null_coalescing_operator: "??" 
+
+implies_expression_reference: implies_expression_member 
+
+implies_expression_member: implies_expression 
+
+implies_expression: or_expression ( implies_operator or_expression_reference)* 
+
+implies_operator: "implies" 
+
+or_expression_reference: or_expression_member 
+
+or_expression_member: or_expression 
+
+or_expression: xor_expression ( or_operator xor_expression | conditional_or_operator xor_expression_reference)* 
+
+or_operator: "|" 
+
+conditional_or_operator: "or" 
+
+xor_expression_reference: xor_expression_member 
+
+xor_expression_member: xor_expression 
+
+xor_expression: and_expression ( xor_operator and_expression)* 
+
+xor_operator: "xor" 
+
+and_expression: equality_expression ( and_operator equality_expression | conditional_and_operator equality_expression_reference)* 
+
+and_operator: "&" 
+
+conditional_and_operator: "and" 
+
+equality_expression_reference: equality_expression_member 
+
+equality_expression_member: equality_expression 
+
+equality_expression: classification_expression ( equality_operator classification_expression)* 
+
+equality_operator: "==" | "!=" | "===" | "!==" 
+
+classification_expression: relational_expression ( classification_test_operator type_reference_member |  cast_operator type_result_member)? | self_reference_expression classification_test_operator type_reference_member | metadata_reference meta_classification_test_operator type_reference_member | self_reference_expression cast_operator type_result_member | metadata_reference meta_cast_operator type_result_member 
+
+classification_test_operator: "hastype" | "istype" | "@" 
+
+meta_classification_test_operator: "@@" 
+
+cast_operator: "as" 
+
+meta_cast_operator: "meta" 
+
+metadata_reference: qualified_name 
+
+type_reference_member: type_reference 
+
+type_result_member: type_reference 
+
+type_reference: reference_typing 
+
+reference_typing: qualified_name 
+
+self_reference_expression: self_reference_member 
+
+self_reference_member: empty_feature 
+
+empty_feature:  
+
+relational_expression: range_expression ( relational_operator range_expression)* 
+
+relational_operator: "<" | ">" | "<=" | ">=" 
+
+range_expression: additive_expression ( ".." additive_expression)? 
+
+additive_expression: multiplicative_expression ( additive_operator multiplicative_expression)* 
+
+additive_operator: "+" | "-" 
+
+multiplicative_expression: exponentiation_expression ( multiplicative_operator exponentiation_expression)* 
+
+multiplicative_operator: "*" | "/" | "%" 
+
+exponentiation_expression: unary_expression ( exponentiation_operator unary_expression)* 
+
+exponentiation_operator: "**" | "^" 
+
+unary_expression: unary_operator extent_expression | extent_expression 
+
+unary_operator: "+" | "-" | "~" | "not" 
+
+extent_expression: "all" type_result_member | primary_expression 
+
+primary_expression: base_expression ( "." feature_chain_member)? ( "#" "(" sequence_expression ")" |  "[" sequence_expression "]" |  "->" reference_typing body_expression | function_reference_expression | argument_list |  "." body_expression |  ".?" body_expression ( "." feature_chain_member)?)* 
+
+function_reference_expression: function_reference_member 
+
+function_reference_member: function_reference 
+
+function_reference: reference_typing 
+
+feature_chain_member: qualified_name | owned_feature_chain 
+
+base_expression: null_expression | literal_expression | feature_reference_expression | metadata_access_expression | invocation_expression | body_expression | "(" sequence_expression ")" 
+
+body_expression: expression_body_member 
+
+expression_body_member: expression_body 
+
+body_parameter_member: "in" body_parameter 
+
+body_parameter: name 
+
+sequence_expression: owned_expression ("," |  "," sequence_expression)? 
+
+feature_reference_expression: feature_reference_member 
+
+feature_reference_member: qualified_name 
+
+metadata_access_expression: qualified_name "." "metadata" 
+
+invocation_expression: owned_feature_typing argument_list 
+
+owned_feature_typing: qualified_name | owned_feature_chain 
+
+owned_feature_chain: feature_chain 
+
+feature_chain: owned_feature_chaining ("." owned_feature_chaining)+ 
+
+owned_feature_chaining: qualified_name 
+
+argument_list: "(" (positional_argument_list | named_argument_list)? ")" 
+
+positional_argument_list: argument_member ("," argument_member)* 
+
+argument_member: argument 
+
+argument: argument_value 
+
+named_argument_list: named_argument_member ("," named_argument_member)* 
+
+named_argument_member: named_argument 
+
+named_argument: parameter_redefinition "=" argument_value 
+
+parameter_redefinition: qualified_name 
+
+argument_value: owned_expression 
+
+null_expression:  "null" | "(" ")" 
+
+literal_expression: literal_boolean | literal_string | literal_integer | literal_real | literal_infinity 
+
+literal_boolean: boolean_value 
+
+boolean_value: "true" | "false" 
+
+literal_string: string_value 
+
+literal_integer: decimal_value 
+
+literal_real: real_value 
+
+real_value: (decimal_value)? "." decimal_value | exp_value | exp_value 
+
+literal_infinity:  "*" 
+
+name: id | unrestricted_name 
+
+qualification: (name "::")+ 
+
+qualified_name: (qualification)? name 
+
+decimal_value: /[0-9]/ (/[0-9]/)* 
+
+exp_value: decimal_value "e" | "E" ("+" | "-")? decimal_value 
+
+id: /[a-z]/ | /[A-Z]/ | "_" (/[a-z]/ | /[A-Z]/ | "_" | /[0-9]/)* 
+
+unrestricted_name: "'" ("\\" "b" | "t" | "n" | "f" | "r" | "\"" | "'" | "\\" | /[^\\\\]/)* "'" 
+
+string_value: "\"" ("\\" "b" | "t" | "n" | "f" | "r" | "\"" | "'" | "\\" | /[^\\\\\\]/)* "\"" 
+
+regular_comment: /[\/\*.*\*\/]/ 
+
+ml_note: /[\/\/\*.*\*\/]/ 
+
+sl_note: "//" (/[^\\n\\r]/ /[^\\n\\r]/*)? (("\r")? "\n")? 
+
+ws: (" " | "\t" | "\r" | "\n")+ 
+

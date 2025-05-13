@@ -11,7 +11,15 @@ from .expression import (
     DataType,
     NameResolution,
 )
-from .utils import XTEXT_CURRENT, NON_PARSING
+from .utils import (
+    XTEXT_CURRENT,
+    NON_PARSING,
+    pascal_to_snake_case,
+    single_to_double_quotes,
+    until_regex,
+    wildcard_regex,
+    character_range_regex,
+)
 
 
 class XTextVisitor(Visitor):
@@ -62,7 +70,7 @@ class XTextRuleVisitor(Visitor):
 
     def rule_name(self, tree: Tree):
         rule_name_token: Token = tree.children[0].children[0]
-        self.rule.name = rule_name_token.value
+        self.rule.name = pascal_to_snake_case(rule_name_token.value)
 
     def return_type(self, tree: Tree):
         transformer: Transformer = ReturnTypeTransformer()
@@ -74,6 +82,7 @@ class XTextRuleVisitor(Visitor):
         """
         transformer: Transformer = RuleBodyTransformer(visit_tokens=True)
         self.rule.body = transformer.transform(tree)
+        self.rule.called_rules = transformer.called_rules
 
 
 @v_args(inline=True)
@@ -81,10 +90,6 @@ class ReturnTypeTransformer(Transformer):
     """
     Visit a single rule in the XText Tree
     """
-
-    def __init__(self):
-        super().__init__()
-        self.names = []
 
     def name(self, *args):
         token: Token = args[0]
@@ -106,6 +111,12 @@ class ReturnTypeTransformer(Transformer):
 @v_args(inline=True)
 class RuleBodyTransformer(Transformer):
     """Transforms Lark parse trees into dataclass objects."""
+
+    called_rules: set[str]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.called_rules = set()
 
     def passthru(self, passthru):
         # Just pass through the item
@@ -140,7 +151,9 @@ class RuleBodyTransformer(Transformer):
 
     def rule_call(self, name):
         # Return the name of the rule being called
-        return RuleCallExpression(name)
+        rule_name = pascal_to_snake_case(name)
+        self.called_rules.add(rule_name)
+        return RuleCallExpression(rule_name)
 
     def group(self, *args):
         if len(args) == 1:
@@ -178,21 +191,20 @@ class RuleBodyTransformer(Transformer):
 
     def predicate(self, *args):
         # Handle predicates
-        # The first argument is the arrow, second is the expression
         return args[0]
 
     def literal(self, lit: Token):
         # Process literals
-        return LiteralExpression(lit.value)
+        return LiteralExpression(single_to_double_quotes(lit.value))
 
-    def char_range(self, start, end):
-        return RegularExpression((f"{start}-{end}"))
+    def char_range(self, start: LiteralExpression, end: LiteralExpression):
+        return RegularExpression(character_range_regex(start.value, end.value))
 
-    def wildcard(self, prefix, suffix):
-        return RegularExpression((f"{prefix}.{suffix}"))
+    def wildcard(self, prefix: LiteralExpression, suffix: LiteralExpression):
+        return RegularExpression(wildcard_regex(prefix.value, suffix.value))
 
-    def until(self, start, end):
-        return RegularExpression((f"{start}.*{end}"))
+    def until(self, start: LiteralExpression, end: LiteralExpression):
+        return RegularExpression(until_regex(start.value, end.value))
 
     def name(self, *args):
         token: Token = args[0]
