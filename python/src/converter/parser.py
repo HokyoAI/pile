@@ -3,6 +3,7 @@ from lark import Lark
 from rich import print
 from .visitor import XTextVisitor, XTextRuleVisitor
 from .rule import XTextRule
+from typing import Optional
 
 
 def parse():
@@ -51,7 +52,19 @@ def _remove_overriden_rules(full_ruleset: list[XTextRule], rule: XTextRule):
         full_ruleset.pop(idx)
 
 
-def validate_rules(rules: list[XTextRule]):
+"""
+Need to handle the following cases:
+empty expressions give us rules like this
+empty_feature:
+
+
+hidden section of grammar
+"""
+
+
+def process_rules(
+    rules: list[XTextRule],
+) -> Optional[list[XTextRule]]:
     if len(rules) == 0:
         print("No rules found.")
         return
@@ -60,7 +73,6 @@ def validate_rules(rules: list[XTextRule]):
 
     defined_rule_names = set()
     used_rule_names = set()
-    transformed_rule_names: dict[str, str] = {}
     overriden_rule_names: set[str] = set()
     finalized_rule_names: set[str] = set()
     for rule in rules:
@@ -76,9 +88,6 @@ def validate_rules(rules: list[XTextRule]):
             print(f"Warning: Rule '{rule.name}' is overridden.")
             continue
 
-        defined_rule_names.add(rule.name)
-        used_rule_names.update(rule.called_rules)
-
         if rule.is_final:
             finalized_rule_names.add(rule.name)
             _remove_overriden_rules(full_ruleset, rule)
@@ -87,6 +96,8 @@ def validate_rules(rules: list[XTextRule]):
             overriden_rule_names.add(rule.name)
             _remove_overriden_rules(full_ruleset, rule)
 
+        defined_rule_names.add(rule.name)
+        used_rule_names.update(rule.called_rules)
         full_ruleset.append(rule)
 
     undefined_rule_names = used_rule_names - defined_rule_names
@@ -96,16 +107,3 @@ def validate_rules(rules: list[XTextRule]):
         return
 
     return full_ruleset
-
-
-"""
-Need to handle the following cases:
-empty expressions give us rules like this
-empty_feature:
-
-terminal rules, regexs, and enum rules
-
-override and final decorators
-
-hidden section of grammar
-"""

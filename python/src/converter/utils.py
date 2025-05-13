@@ -1,4 +1,13 @@
 import re
+from .expression import (
+    Expression,
+    SequenceExpression,
+    OrExpression,
+    LiteralExpression,
+    RegularExpression,
+    GroupExpression,
+    CardinalityType,
+)
 
 
 class XTextCurrent:
@@ -43,9 +52,14 @@ def pascal_to_snake_case(name: str) -> str:
     Converts an Xtext rule name (CamelCase or PascalCase)
     to a Lark rule name (snake_case and lowercase).
 
+    If the name is all uppercase, it is returned as is to account for terminal rules.
+
     Example: "DefinitionBodyItem" → "definition_body_item"
+    Example: "QUAL_NAME" → "QUAL_NAME"
     """
     # Insert underscore between lowercase and uppercase letters
+    if name.isupper():
+        return name
     s1 = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", name)
     # Convert the entire string to lowercase
     return s1.lower()
@@ -122,8 +136,8 @@ def character_range_regex(start_char: str, end_char: str) -> str:
     if len(start_char) != 1 or len(end_char) != 1:
         raise ValueError("Both start_char and end_char must be single characters")
 
-    # Create the regex pattern
-    return f"/[{start_char}-{end_char}]/"
+    pattern = re.compile(f"[{start_char}-{end_char}]")
+    return pattern.pattern
 
 
 def wildcard_regex(start_char: str, end_char: str) -> str:
@@ -146,8 +160,8 @@ def wildcard_regex(start_char: str, end_char: str) -> str:
     if len(start_char) != 1 or len(end_char) != 1:
         raise ValueError("Both start_char and end_char must be single characters")
 
-    # Create the regex pattern
-    return f"/[{start_char}.{end_char}]/"
+    pattern = re.compile(f"[{start_char}.{end_char}]")
+    return pattern.pattern
 
 
 def escape_regex_chars(s: str) -> str:
@@ -164,7 +178,7 @@ def escape_regex_chars(s: str) -> str:
         escape_regex_chars("[test]") returns "\\[test\\]"
     """
     # Characters that need to be escaped in regex patterns
-    special_chars = r"/[](){}?*+|^$\."
+    special_chars = r"/[](){}?*+|^$."
 
     # Escape each special character with a backslash
     result = ""
@@ -195,4 +209,95 @@ def until_regex(start: str, end: str) -> str:
     end = escape_regex_chars(strip_double_quotes(end))
 
     # Create the regex pattern
-    return f"/[{start}.*{end}]/"
+    return f"[{start}.*{end}]"
+
+
+# Check if the expression is negated and contains only LiteralExpressions or RegularExpressions
+def contains_only_literals(expr: Expression):
+    if isinstance(expr, LiteralExpression) or isinstance(expr, RegularExpression):
+        return True
+    elif isinstance(expr, SequenceExpression) or isinstance(expr, OrExpression):
+        return all(contains_only_literals(e) for e in expr.expressions)
+    elif isinstance(expr, GroupExpression):
+        return contains_only_literals(expr.expression)
+    else:
+        return False
+
+
+def expression_to_regex(expr: Expression) -> re.Pattern:
+    """
+    Converts an Expression object to a Python re pattern object.
+    Only works for expressions where all atomic expressions are literals or regular expressions.
+
+    Args:
+        expr: An Expression object to convert
+
+    Returns:
+        A compiled regular expression pattern object
+
+    Raises:
+        ValueError: If the expression contains atomic expressions that are not literals or regular expressions
+    """
+    if not contains_only_literals(expr):
+        raise ValueError(
+            "Expression must only contain literals and regular expressions"
+        )
+
+    pattern_str = _build_regex_pattern(expr)
+    return re.compile(pattern_str)
+
+
+def _build_regex_pattern(expr: Expression) -> str:
+    """
+    Recursively builds a regex pattern string from an Expression.
+
+    Args:
+        expr: The Expression to convert
+
+    Returns:
+        A string representation of a regular expression
+    """
+    if isinstance(expr, LiteralExpression):
+        # Escape any regex special characters in the literal
+        return re.escape(strip_double_quotes(expr.value))
+
+    elif isinstance(expr, RegularExpression):
+        # Regular expressions are assumed to already be valid regex patterns
+        # Remove any leading/trailing slashes if present (common in some regex formats)
+        pattern = expr.value
+        if pattern.startswith("/") and pattern.endswith("/"):
+            pattern = pattern[1:-1]
+        return pattern
+
+    elif isinstance(expr, SequenceExpression):
+        # Join all subexpressions with no delimiter (AND operation)
+        return "".join(_build_regex_pattern(e) for e in expr.expressions)
+
+    elif isinstance(expr, OrExpression):
+        # Join all subexpressions with | (OR operation)
+        return "|".join(f"(?:{_build_regex_pattern(e)})" for e in expr.expressions)
+
+    elif isinstance(expr, GroupExpression):
+        # Handle groups with their cardinality and negation
+        inner_pattern = _build_regex_pattern(expr.expression)
+
+        # Handle negation if present
+        if expr.negated:
+            # Negative lookahead to ensure the pattern doesn't match
+            pattern = f"(?!{inner_pattern})"
+        else:
+            # Group the pattern
+            pattern = f"(?:{inner_pattern})"
+
+        # Apply cardinality if specified
+        if expr.cardinality_type is not None:
+            if expr.cardinality_type == CardinalityType.OPTIONAL:
+                pattern += "?"
+            elif expr.cardinality_type == CardinalityType.AT_LEAST_ONE:
+                pattern += "+"
+            elif expr.cardinality_type == CardinalityType.ZERO_OR_MORE:
+                pattern += "*"
+
+        return pattern
+    else:
+        raise ValueError(f"Unsupported expression type: {type(expr)}")

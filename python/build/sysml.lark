@@ -16,11 +16,11 @@ annotating_member: annotating_element
 
 annotating_element: comment | documentation | textual_representation | metadata_usage 
 
-comment: ("comment" (identification)? ("about" annotation ("," annotation)*)?)? regular_comment 
+comment: ("comment" (identification)? ("about" annotation ("," annotation)*)?)? REGULAR_COMMENT 
 
-documentation: "doc" (identification)? regular_comment 
+documentation: "doc" (identification)? REGULAR_COMMENT 
 
-textual_representation: ("rep" (identification)?)? "language" string_value regular_comment 
+textual_representation: ("rep" (identification)?)? "language" STRING_VALUE REGULAR_COMMENT 
 
 metadata_keyword: "metadata" 
 
@@ -1036,37 +1036,49 @@ literal_boolean: boolean_value
 
 boolean_value: "true" | "false" 
 
-literal_string: string_value 
+literal_string: STRING_VALUE 
 
-literal_integer: decimal_value 
+literal_integer: DECIMAL_VALUE 
 
 literal_real: real_value 
 
-real_value: (decimal_value)? "." decimal_value | exp_value | exp_value 
+real_value: (DECIMAL_VALUE)? "." DECIMAL_VALUE | EXP_VALUE | EXP_VALUE 
 
 literal_infinity:  "*" 
 
-name: id | unrestricted_name 
+name: ID | UNRESTRICTED_NAME 
 
 qualification: (name "::")+ 
 
 qualified_name: (qualification)? name 
 
-decimal_value: /[0-9]/ (/[0-9]/)* 
+// Decimal value: one or more digits
+DECIMAL_VALUE: /[0-9]+/
 
-exp_value: decimal_value "e" | "E" ("+" | "-")? decimal_value 
+// Exponential notation: decimal followed by 'e' or 'E', optional sign, and another decimal
+EXP_VALUE: DECIMAL_VALUE ("e"|"E") ["+"|"-"]? DECIMAL_VALUE
 
-id: /[a-z]/ | /[A-Z]/ | "_" (/[a-z]/ | /[A-Z]/ | "_" | /[0-9]/)* 
+// Identifier: starts with letter or underscore, followed by letters, digits, or underscores
+ID: /[a-zA-Z_][a-zA-Z_0-9]*/
 
-unrestricted_name: "'" ("\\" "b" | "t" | "n" | "f" | "r" | "\"" | "'" | "\\" | /[^\\\\]/)* "'" 
+// Single-quoted string with escape sequences
+UNRESTRICTED_NAME: /'(\\[btnfr"'\\]|[^\\'])*'/
 
-string_value: "\"" ("\\" "b" | "t" | "n" | "f" | "r" | "\"" | "'" | "\\" | /[^\\\\\\]/)* "\"" 
+// Double-quoted string with escape sequences
+STRING_VALUE: /"(\\[btnfr"'\\]|[^\\"])*"/
 
-regular_comment: /[\/\*.*\*\/]/ 
+// Multi-line comment
+REGULAR_COMMENT: /\/\*(.|\n)*?\*\//
 
-ml_note: /[\/\/\*.*\*\/]/ 
+// Multi-line note
+ML_NOTE: /\/\/\*(.|\n)*?\*\//
 
-sl_note: "//" (/[^\\n\\r]/ /[^\\n\\r]/*)? (("\r")? "\n")? 
+// Single-line note (comment)
+SL_NOTE: /\/\/[^\r\n]*((\r?\n)|$)/
 
-ws: (" " | "\t" | "\r" | "\n")+ 
+// Whitespace: one or more spaces, tabs, or newlines
+WS: /[ \t\r\n]+/
 
+%ignore WS
+%ignore ML_NOTE
+%ignore SL_NOTE

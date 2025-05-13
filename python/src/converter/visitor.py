@@ -19,6 +19,8 @@ from .utils import (
     until_regex,
     wildcard_regex,
     character_range_regex,
+    contains_only_literals,
+    expression_to_regex,
 )
 
 
@@ -168,9 +170,17 @@ class RuleBodyTransformer(Transformer):
                 cardinality_type = arg
             else:
                 expression = arg
-        expr = GroupExpression(
-            negated=negated, expression=expression, cardinality_type=cardinality_type
-        )
+        if negated and contains_only_literals(expression):
+            # Lark only support Regex in this case
+            # We need to convert the expression to a regex
+            pattern = expression_to_regex(expression)
+            expr = RegularExpression(pattern.pattern)
+        else:
+            expr = GroupExpression(
+                negated=negated,
+                expression=expression,
+                cardinality_type=cardinality_type,
+            )
         return expr
 
     def optional(self):
