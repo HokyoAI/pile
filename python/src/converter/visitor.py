@@ -8,7 +8,10 @@ from .expression import (
     RegularExpression,
     RuleCallExpression,
     GroupExpression,
+    DataType,
+    NameResolution,
 )
+from .utils import XTEXT_CURRENT, NON_PARSING
 
 
 class XTextVisitor(Visitor):
@@ -62,9 +65,8 @@ class XTextRuleVisitor(Visitor):
         self.rule.name = rule_name_token.value
 
     def return_type(self, tree: Tree):
-        visitor = ReturnTypeVisitor()
-        visitor.visit_topdown(tree)
-        self.rule.return_type = visitor.names
+        transformer: Transformer = ReturnTypeTransformer()
+        self.rule.return_type = transformer.transform(tree)
 
     def rule_body(self, tree: Tree):
         """
@@ -74,7 +76,8 @@ class XTextRuleVisitor(Visitor):
         self.rule.body = transformer.transform(tree)
 
 
-class ReturnTypeVisitor(Visitor):
+@v_args(inline=True)
+class ReturnTypeTransformer(Transformer):
     """
     Visit a single rule in the XText Tree
     """
@@ -83,21 +86,42 @@ class ReturnTypeVisitor(Visitor):
         super().__init__()
         self.names = []
 
-    def name(self, tree: Tree):
-        token: Token = tree.children[0]
-        self.names.append(token.value)
+    def name(self, *args):
+        token: Token = args[0]
+        return token.value
+
+    def qualified_name(self, *args):
+        qname = [str(arg) for arg in args]
+        return qname
+
+    def data_type(self, *args):
+        dtype = DataType(namespace=args[0], qualified_name=args[1])
+        return dtype
+
+    def return_type(self, *args):
+        # If there's only one name, return it directly
+        return args[0]
 
 
 @v_args(inline=True)
 class RuleBodyTransformer(Transformer):
     """Transforms Lark parse trees into dataclass objects."""
 
-    def rule_body(self, passthru):
-        # The rule body is the main entry point for the transformation
+    def passthru(self, passthru):
+        # Just pass through the item
         return passthru
 
-    def statements(self, alternative):
-        return alternative
+    type_spec = passthru
+    assignment_item = passthru
+    non_parsing_assignment = passthru
+    right_sides = passthru
+    terminal_rules = passthru
+    pure_parsing = passthru
+    basic_element = passthru
+    cardinality = passthru
+    item = passthru
+    statements = passthru
+    rule_body = passthru
 
     def alternative(self, *args):
         # If there's only one sequence, return it directly
@@ -113,9 +137,6 @@ class RuleBodyTransformer(Transformer):
         # Otherwise, create a SequenceExpression
         expr = SequenceExpression(expressions=list(args))
         return expr
-
-    def item(self, passthru):
-        return passthru
 
     def rule_call(self, name):
         # Return the name of the rule being called
@@ -139,10 +160,6 @@ class RuleBodyTransformer(Transformer):
         )
         return expr
 
-    def cardinality(self, cardinality):
-        # Convert the cardinality symbol to enum
-        return cardinality
-
     def optional(self):
         # Optional cardinality
         return CardinalityType.OPTIONAL
@@ -159,24 +176,14 @@ class RuleBodyTransformer(Transformer):
         # Return True to indicate negation
         return True
 
-    # def predicate(self, *args):
-    #     # Handle predicates
-    #     # The first argument is the arrow, second is the expression
-    #     return GroupExpression(expression=args[1], negated=False, cardinality_type=None)
-
-    def basic_element(self, passthru):
-        return passthru
-
-    def pure_parsing(self, passthru):
-        return passthru
+    def predicate(self, *args):
+        # Handle predicates
+        # The first argument is the arrow, second is the expression
+        return args[0]
 
     def literal(self, lit: Token):
         # Process literals
         return LiteralExpression(lit.value)
-
-    # Handle other terminal types
-    def terminal_rules(self, passthru):
-        return passthru
 
     def char_range(self, start, end):
         return RegularExpression((f"{start}-{end}"))
@@ -187,97 +194,52 @@ class RuleBodyTransformer(Transformer):
     def until(self, start, end):
         return RegularExpression((f"{start}.*{end}"))
 
-    # # Handle assignment structures
-    # def assignment_item(self, item):
-    #     # Just pass through the assignment item
-    #     return item
+    def name(self, *args):
+        token: Token = args[0]
+        return token.value
 
-    # def property_assignment(self, *args):
-    #     # Create an atomic expression for property assignments
-    #     # Simplified representation
-    #     return AtomicExpression(value=f"property_assignment:{args}")
+    def qualified_name(self, *args):
+        qname = [str(arg) for arg in args]
+        return qname
 
-    # def list_prop_assignment(self, *args):
-    #     # Create an atomic expression for list property assignments
-    #     return AtomicExpression(value=f"list_prop_assignment:{args}")
+    def data_type(self, *args):
+        dtype = DataType(namespace=args[0], qualified_name=args[1])
+        return dtype
 
-    # def bool_prop_assignment(self, *args):
-    #     # Create an atomic expression for boolean property assignments
-    #     return AtomicExpression(value=f"bool_prop_assignment:{args}")
+    def name_resolution(self, *names):
+        data_types = []
+        rule_calls = []
+        for name in names:
+            if isinstance(name, DataType):
+                data_types.append(name)
+            elif isinstance(name, RuleCallExpression):
+                rule_calls.append(name)
+            else:
+                raise ValueError(f"Unknown name resolution type: {name}")
 
-    # def non_parsing_assignment(self, item):
-    #     # Pass through non-parsing assignments
-    #     return item
+        return NameResolution(rule_calls=rule_calls, data_types=data_types)
 
-    # def non_parsing_type(self, data_type):
-    #     return AtomicExpression(value=f"non_parsing_type:{data_type}")
+    def xtext_current(self, *args):
+        return XTEXT_CURRENT
 
-    # def non_parsing_equals(self, *args):
-    #     return AtomicExpression(value=f"non_parsing_equals:{args}")
+    def property_assignment(self, *args):
+        # Create an atomic expression for property assignments
+        # Simplified representation
+        return args[1]  # return right side of assignment
 
-    # def non_parsing_list(self, *args):
-    #     return AtomicExpression(value=f"non_parsing_list:{args}")
+    def list_prop_assignment(self, *args):
+        # Create an atomic expression for list property assignments
+        return args[1]  # return right side of assignment
 
-    # # Handle name resolutions and other complex structures
-    # def left_sides(self, *args):
-    #     return args
+    def bool_prop_assignment(self, *args):
+        # Create an atomic expression for boolean property assignments
+        return args[1]  # return right side of assignment
 
-    # def right_sides(self, value):
-    #     return value
+    def non_parsing_type(self, data_type):
+        return NON_PARSING
 
-    # def name_resolution(self, *names):
-    #     return f"name_resolution:{names}"
+    def non_parsing_equals(self, *args):
+        return NON_PARSING
 
-    # def XTEXT_CURRENT(self, _):
-    #     return "current"
-
-
-# class StatementsTransformer(Transformer):
-#     # def statements(self, items):
-#     #     # A statement is just an alternative
-#     #     return Statement(items[0])
-
-#     # def alternative(self, items):
-#     #     alt = Alternative()
-#     #     for item in items:
-#     #         if isinstance(item, Sequence):
-#     #             alt.add_sequence(item)
-#     #         else:
-#     #             # This handles the case where we might have just one item
-#     #             # that's not already wrapped in a Sequence
-#     #             seq = Sequence([item])
-#     #             alt.add_sequence(seq)
-#     #     return alt
-
-#     # def sequence(self, items):
-#     #     seq = Sequence()
-#     #     for item in items:
-#     #         seq.add_element(item)
-#     #     return seq
-
-#     def literal(self, n):
-#         (n,) = n
-#         return str(n)
-
-#     def rule_call(self, n):
-#         (n,) = n
-#         token: Token = n.children[0]
-#         return str(token.value)
-
-#     def basic_element(self, n):
-#         return passthrough(n)
-
-#     def terminal_rules(self, n):
-#         return passthrough(n)
-
-#     def pure_parsing(self, n):
-#         return passthrough(n)
-
-#     def char_range(self, items):
-#         return RegExp(f"{items[0]}-{items[1]}")
-
-#     def wildcard(self, items):
-#         return RegExp(f"{items[0]}.{items[1]}")
-
-#     def until(self, items):
-#         return RegExp(f"{items[0]}.*{items[1]}")
+    def non_parsing_list(self, *args):
+        return NON_PARSING

@@ -1,12 +1,19 @@
 from dataclasses import dataclass
 from typing import List, Optional
 from enum import Enum
+from .utils import pascal_to_snake_case
 
 
 class CardinalityType(Enum):
     OPTIONAL = "?"
     AT_LEAST_ONE = "+"
     ZERO_OR_MORE = "*"
+
+
+@dataclass
+class DataType:
+    namespace: str
+    qualified_name: list[str]
 
 
 @dataclass
@@ -37,7 +44,8 @@ class RegularExpression(AtomicExpression):
 class RuleCallExpression(AtomicExpression):
     """Represents a rule call expression"""
 
-    pass
+    def __str__(self):
+        return pascal_to_snake_case(self.value)
 
 
 @dataclass
@@ -76,7 +84,22 @@ class GroupExpression(Expression):
     cardinality_type: Optional[CardinalityType] = None
 
     def __str__(self):
-        result = f"{'!' if self.negated else ''}({self.expression})"
+        result = f"{'!' if self.negated else ''}({str(self.expression)})"
         if self.cardinality_type is not None:
-            result += f" {self.cardinality_type.value}"
+            result += f"{self.cardinality_type.value}"
         return result
+
+
+@dataclass
+class NameResolution:
+    rule_calls: List[RuleCallExpression]
+    data_types: List[DataType]
+
+    def __post_init__(self):
+        if len(self.data_types) > 1:
+            raise ValueError("Multiple data types found in name resolution.")
+        if len(self.rule_calls) != 1:
+            raise ValueError("Multiple or None rule calls found in name resolution.")
+
+    def __str__(self):
+        return str(self.rule_calls[0])

@@ -5,31 +5,81 @@ import "https://www.omg.org/spec/SysML/20230201" as SysML
 
 /* ROOT NAMESPACE */
 
-
-terminal SL_NOTE:
-	'//' (!('\n' | '\r') !('\n' | '\r')*)? ('\r'? '\n')?;
-
-TargetExpression returns SysML::Expression :
+PrimaryExpression returns SysML::Expression :
 	BaseExpression
-	( ( {SysML::FeatureChainExpression.operand += current} '.' 
+	( {SysML::FeatureChainExpression.operand += current} '.' 
 	  ownedRelationship += FeatureChainMember
-	  )?
-	  ( {SysML::OperatorExpression.operand += current} 
+	)?
+	( ( {SysML::OperatorExpression.operand += current} 
+	    operator = '#' '(' operand += SequenceExpression ')'
+	  | {SysML::OperatorExpression.operand += current} 
 	    operator = '[' operand += SequenceExpression ']'
 	  | {SysML::OperatorExpression.operand += current} '->' 
 	    ownedRelationship += ReferenceTyping 
-	    ( ownedRelationship += ExpressionBodyMember 
-	    | ownedRelationship += FunctionReferenceMember 
+	    ( operand += BodyExpression 
+	    | operand += FunctionReferenceExpression 
 	    | ArgumentList
-	    ) 
+	    )
 	  | {SysML::CollectExpression.operand += current} '.'
-	    ownedRelationship += ExpressionBodyMember 
+	    operand += BodyExpression 
 	  | {SysML::SelectExpression.operand += current} '.?'
-	    ownedRelationship += ExpressionBodyMember 
+	    operand += BodyExpression 
 	  )
+	  ( {SysML::FeatureChainExpression.operand += current} '.' 
+	  	ownedRelationship += FeatureChainMember
+	  )?
 	)*
 ;
 
+EmptyTargetEnd returns SysML::Feature :
+	{SysML::Feature}
+;
+
+ClassificationExpression returns SysML::Expression :
+	  RelationalExpression 
+	  ( {SysML::OperatorExpression.operand += current} 
+	  	operator = ClassificationTestOperator ownedRelationship += TypeReferenceMember
+	  | {SysML::OperatorExpression.operand += current}
+	    operator = CastOperator ownedRelationship += TypeResultMember
+	  )?
+	| {SysML::OperatorExpression} operand += SelfReferenceExpression 
+	  operator = ClassificationTestOperator ownedRelationship += TypeReferenceMember
+	| {SysML::OperatorExpression} operand += MetadataReference
+	  operator = MetaClassificationTestOperator ownedRelationship += TypeReferenceMember
+	| {SysML::OperatorExpression} operand += SelfReferenceExpression 
+	  operator = CastOperator ownedRelationship += TypeResultMember
+	| {SysML::OperatorExpression} operand += MetadataReference
+	  operator = MetaCastOperator ownedRelationship += TypeResultMember
+;
+
+enum VisibilityIndicator returns SysML::VisibilityKind:
+	public = 'public' | private = 'private'| protected = 'protected'
+;
+enum FilterPackageMemberVisibility returns SysML::VisibilityKind :
+	private = '['
+;
+
+
+
+fragment PackageBody returns SysML::Package :
+	 ';' 
+	| '{' ( // Note: PackageBodyElement is expanded here to avoid
+			// infinite loops in the incremental parser.
+		    ownedRelationship += PackageMember
+		  | ownedRelationship += ElementFilterMember
+		  | ownedRelationship += AliasMember
+		  | ownedRelationship += Import )* 
+	  '}'
+;
+fragment DefinitionBodyItem returns SysML::Type :
+	  ownedRelationship += DefinitionMember 
+	| ownedRelationship += VariantUsageMember
+	| ownedRelationship += NonOccurrenceUsageMember
+	| ( ownedRelationship += EmptySuccessionMember )?
+	  ownedRelationship += OccurrenceUsageMember	
+	| ownedRelationship += AliasMember
+	| => ownedRelationship += Import
+;
 Dependency returns SysML::Dependency :
 	( ownedRelationship += PrefixMetadataAnnotation )*
 	'dependency' ( Identification? 'from' )?

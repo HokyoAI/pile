@@ -60,9 +60,9 @@ non_parsing_equals: "{" left_sides "=" right_sides "}"
 non_parsing_list: "{" left_sides "+=" right_sides "}"
 
 left_sides: (type_spec? name) | data_type
-right_sides: XTEXT_CURRENT | name_resolution | group 
-XTEXT_CURRENT: "current"
-name_resolution: "[" (name | data_type) ("|" (name | data_type))* "]"
+right_sides: xtext_current | name_resolution | group 
+xtext_current: "current"
+name_resolution: "[" (data_type | rule_call) ("|" (data_type | rule_call))* "]"
 
 // Basic atomic elements
 basic_element: rule_call | pure_parsing
